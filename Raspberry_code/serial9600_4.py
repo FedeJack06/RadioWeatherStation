@@ -40,6 +40,7 @@ errorCount = 0
 ## PREOCESSING
 while True:
 	#### INPUT DATI DA ARDUINO
+	init = ser.readline()
 	link_status = ser.readline().decode('utf-8').rstrip()
 	send_status = ser.readline().decode('utf-8').rstrip()
 	ws_date = ser.readline().decode('utf-8').rstrip()
@@ -93,7 +94,7 @@ while True:
 	else:
 		windchill = tp
 
-	wetbulb = tp * (0.45 + 0.006 * ur * pow(slmpressure/1060, 0.5))
+	wetbulb = tp * (0.45 + 0.006 * ur * pow(slmpressure/106000, 0.5))
 	###se OK LINK alla stazione esterna
 	if link_status == "1":
 		print ("ok link")

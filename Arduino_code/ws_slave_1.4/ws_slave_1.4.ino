@@ -1138,6 +1138,7 @@ void setup() {
 }
 
 void loop() {
+  Serial.println("init");
   resetArduino();
   radioRX();
   wdt_reset();
