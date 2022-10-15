@@ -426,7 +426,7 @@ void initTFT(){
 void readTemp () {
 
 //DATI ISTANTANEI DAL MASTER
-  tp = float(radioRx.tpdht)/10;
+  tp = float(radioRx.tp)/10;
   tpdht = float(radioRx.tpdht)/10;
   tpbmp = barometer.readTemperature();
   tp2 = float(radioRx.tp2)/10;
