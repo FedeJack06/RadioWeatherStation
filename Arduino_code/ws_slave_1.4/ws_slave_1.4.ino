@@ -66,7 +66,7 @@ float mediaTp;//MEDIA GIORNALIERA
 //andamento
 int tp10min=0, tp5min=0, tpnow=0;
 unsigned long intAndamentoTp=0;
-String andamentoTp;// = < >
+char andamentoTp;// = < >
 float tpChange;//ANDAMENTO
 
 //medie in intervallo
@@ -81,7 +81,7 @@ byte ur2;
 //andamento
 byte ur10min=0, ur5min=0, urnow=0;
 unsigned long intAndamentoUr=0;
-String andamentoUr;// = < >
+char andamentoUr;// = < >
 int urChange;
 
 //medie in intervallo
@@ -95,7 +95,7 @@ float dewPoint; // variabile del punto di rugiada
 //andamento
 int dp10min=0, dp5min=0, dpnow=0;
 unsigned long intAndamentoDp=0;
-String andamentoDp;
+char andamentoDp;
 int dpChange;
 
 ////////////////////////////////PRESSIONE///////////////////////////
@@ -133,11 +133,11 @@ struct WindValue {
   float valmedio; //velocità media vento
   float raffica; //raffica massima giornaliera rilevata dal master
   float max; //velocitá massima nell'intervallo della media
-  String dir; //direzione del vento
+  char dir[4]; //direzione del vento
   int ang; //direzione del vento in gradi
   int angmedio;
-  String dirmedia; //direzione vento media 10'
-  String err; //errore direzione vento
+  char dirmedia[4]; //direzione vento media 10'
+  char err[3]; //errore direzione vento
 };
 WindValue wind;
 
@@ -147,9 +147,9 @@ float sommaWind = 0;//somma delle velocità per la media
 int iwind = 0;//conteggio valori velocità da mediare
 
 //direzione
-String direzioni[] = {"NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO","N"};
+char direzioni[16][4] = {"NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO","N"};
 int gradi[] = {22,45,67,90,112,135,157,180,202,225,247,270,292,315,337,0};
-String erdir[] = {"1","eE","eS","eO","eN"};
+char erdir[5][3] = {"1","eE","eS","eO","eN"};
 //media
 const long intervaldir = 300000;//5' intervallo in cui ci calcola media direzione vento
 int mediaDir[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//array della moda direzione del vento
@@ -169,12 +169,10 @@ const long intervalWeb = 300000; //ogni 5 min report per meteonetwork
 unsigned long previousWeb = 0;
 
 /////////////CONTROLLI ED ERRORI/////////////////////////////////////////////////
-String lastRadioRx; //ultima data ricezione dati radio
+//ultima data ricezione dati radio
+int Year,Month,Day,Hour,Minute,Second;
 tmElements_t d;
-String wsDate, wsTime; //element ora e data
-tmElements_t dd;
 
-String lastRadioRX; //ultima data invio dati radio
 bool erbmp=false; //errore init bmp180 SLAVE
 bool erradioRX=false; //errore init radio SLAVE
 bool erroreSD=false; //errore sd SLAVE
@@ -460,13 +458,13 @@ void readTemp () {
   }
 
   if (abs(tp*10 - tp10min) > 50)
-    andamentoTp = " ";
+    andamentoTp = ' ';
   else if (tp*10 - tp10min > 3)
-    andamentoTp = "+";
+    andamentoTp = '+';
   else if (tp*10 - tp10min < -3)
-    andamentoTp = "-";
+    andamentoTp = '-';
   else
-    andamentoTp = "=";
+    andamentoTp = '=';
 
   if (millis() > 900000)
     tpChange = tp - (float(tp10min)/10);//andamento orario
@@ -512,13 +510,13 @@ void readHum () {
   }
 
   if (abs(ur - ur10min) > 20)
-    andamentoUr = " ";
+    andamentoUr = ' ';
   else if (ur - ur10min > 2)
-    andamentoUr = "+";
+    andamentoUr = '+';
   else if (ur - ur10min < -2)
-    andamentoUr = "-";
+    andamentoUr = '-';
   else
-    andamentoUr = "=";
+    andamentoUr = '=';
 
   if (millis() > 900000)
     urChange = ur - ur10min;
@@ -628,12 +626,15 @@ void readWind () {
 
 //DIREZIONE DEL VENTO
 void readWindDir () {
-  wind.dir = direzioni[radioRx.winddir];
+  strcpy(wind.dir, direzioni[radioRx.winddir]);
+  strcpy(wind.err, erdir[radioRx.erWinddir]);
+  //wind.dir = direzioni[radioRx.winddir];
   wind.ang = gradi[radioRx.winddir];
-  wind.err = erdir[radioRx.erWinddir];
+  //wind.err = erdir[radioRx.erWinddir];
   
 //media wind dir ultimi 10'
-  wind.dirmedia = direzioni[radioRx.winddirMedio];
+  strcpy(wind.dirmedia, direzioni[radioRx.winddirMedio]);
+  //wind.dirmedia = direzioni[radioRx.winddirMedio];
   wind.angmedio = gradi[radioRx.winddirMedio];
 
 }
@@ -688,13 +689,13 @@ void readDewPoint () {
   }
 
   if (abs(dewPoint*10 - dp10min) > 50)
-    andamentoDp = " ";
+    andamentoDp = ' ';
   else if (dewPoint*10 - dp10min > 3)
-    andamentoDp = "+";
+    andamentoDp = '+';
   else if (dewPoint*10 - dp10min < -3)
-    andamentoDp = "-";
+    andamentoDp = '-';
   else
-    andamentoDp = "=";
+    andamentoDp = '=';
 //andamento orario
   if (millis() > 900000)
     dpChange = dewPoint - (float(dp10min)/10);
@@ -950,7 +951,15 @@ tft.println(mediaRR, 1);
     tft.print(radioRx.reset);
     tft.print(" ");
     tft.setTextColor (ST7735_GREEN);
-    tft.print(lastRadioRx);
+    tft.print(Hour);
+    tft.print(":");
+    tft.print(Minute);
+    tft.print(":");
+    tft.print(Second);
+    tft.print("-");
+    tft.print(Day);
+    tft.print("/");
+    tft.print(Month);
     tft.drawLine(118,116,118,126,ST7735_RED);
     tft.setCursor(120,118);
     tft.setTextColor (ST7735_WHITE);
@@ -1010,7 +1019,7 @@ void RestartEstremi() {
 //SALVATAGGIO VALORI NEL FILE 'datalog.csv'
 void Datalog() {
   erroreSD  = SD.begin(SD_SS, SPI_HALF_SPEED);
-  if (millis() - previousMillis >= 10000) {//interval
+  if (millis() - previousMillis >= interval) {
     if (!erroreSD)
       //Serial.println(F("SD ok"));
       erroreSD = false;    
@@ -1071,14 +1080,13 @@ void writeEstremi () {
 
 void getTime() {
   breakTime (radioRx.data, d);//usare d.Hour d.Minute d.Second d.Day d.Month d.Year per registrare valori orari
-  lastRadioRx = String(d.Hour) + ":" + String(d.Minute) + ":" + String(d.Second) + "-" + String(d.Day) + "/" + String(d.Month);
-}
-
-//data attuale
-void getDateTime () {
-  breakTime (radioRx.data, dd);
-  wsDate = String(dd.Year+1970) + "-" + String(dd.Month) + "-" + String(dd.Day);
-  wsTime = String(dd.Hour) + ":" + String(dd.Minute) + ":" + String(dd.Second);
+  //lastRadioRx = String(d.Hour) + ":" + String(d.Minute) + ":" + String(d.Second) + "-" + String(d.Day) + "/" + String(d.Month);
+  Year = d.Year+1970;
+  Month = d.Month;
+  Day = d.Day;
+  Hour = d.Hour;
+  Minute = d.Minute;
+  Second = d.Second;
 }
 
 //reset da remoto
@@ -1159,7 +1167,6 @@ void loop() {
   tft.drawPixel(53, 55, ST7735_WHITE);
   if (radioLink){
     getTime();//prendo data attuale dal valore time int ricevuto da radio
-    getDateTime();
     if (onetime) {//funzioni da eseguire solo al primo loop, dopo aver ricevuto  i dati
       readEstremi();
       onetime = 0;
@@ -1190,8 +1197,17 @@ void loop() {
   tft.drawPixel(89, 55, ST7735_RED);
   wdt_reset();
 ////////////////////////////////////////////////////////
-  Serial.println(wsDate);
-  Serial.println(wsTime);
+  Serial.print(Year);
+  Serial.print("-");
+  Serial.print(Month);
+  Serial.print("-");
+  Serial.println(Day);
+  Serial.print(Hour);
+  Serial.print(":");
+  Serial.print(Minute);
+  Serial.print(":");
+  Serial.println(Second);
+  
   Serial.println(TP);
   Serial.println(TPDHT);
   Serial.println(TP2);
