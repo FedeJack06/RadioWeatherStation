@@ -1010,7 +1010,7 @@ void RestartEstremi() {
 //SALVATAGGIO VALORI NEL FILE 'datalog.csv'
 void Datalog() {
   erroreSD  = SD.begin(SD_SS, SPI_HALF_SPEED);
-  if (millis() - previousMillis >= interval) {
+  if (millis() - previousMillis >= 10000) {//interval
     if (!erroreSD)
       //Serial.println(F("SD ok"));
       erroreSD = false;    
@@ -1018,8 +1018,16 @@ void Datalog() {
       //Serial.println(F("SD ok"));
       erroreSD=true;
       previousMillis = millis();
+
+      ofstream dataday ("dataDay.csv", ios_base::app);
+
+      dataday << int(d.Year+1970) << "/" << int(d.Month) << "/" << int(d.Day) << " " << int(d.Hour) << ":" << int(d.Minute) << " " << TP << " " << TPDHT << " " << UR << " " << dewPoint << " " << heatindexc << " " << SLPR/100 << " "
+      << wind.valmedio*3.6 << " " << wind.max*3.6 << " " << wind.angmedio << " " << windchill << " " << mmPioggiagiorno << " " << mediaRR << " " << rainrateMax << " " << TP2 << endl;
+
+      dataday.close();
+
   
-      String dataString = String(d.Year+1970) + "/" + String(d.Month) + "/" + String(d.Day) + " " + String(d.Hour) + ":" + String(d.Minute)+ " " + String(TP, 1) + " " + String(TPDHT, 1) + " " +
+      /*String dataString = String(d.Year+1970) + "/" + String(d.Month) + "/" + String(d.Day) + " " + String(d.Hour) + ":" + String(d.Minute)+ " " + String(TP, 1) + " " + String(TPDHT, 1) + " " +
                           String(UR) + " " + String(dewPoint, 1) + " " + String(heatindexc, 1) + " " + String(SLPR/100, 1) + " " + String(wind.valmedio*3.6, 1) + " " + String(wind.max*3.6, 1) 
                           + " " + wind.dirmedia + " " + String(windchill, 1) + " " + String(mmPioggiagiorno, 1) + " " + String(mediaRR, 1) + " " + String(rainrateMax, 1) + " " + String(TP2, 1);
 
@@ -1028,7 +1036,8 @@ void Datalog() {
         logFile.println(dataString);
         logFile.close();
         //Serial.println(F("written dataDay.csv"));
-      }
+      }*/
+
       //reset estremi temporanei dopo averli scritti
       wind.max = 0;
       rainrateMax = 0;
@@ -1125,6 +1134,8 @@ void radioRX(){
 void setup() {  
   Serial.begin(9600);
   Wire.begin();
+  digitalWrite(SDA, 0);
+  digitalWrite(SCL, 0);
   SPI.begin();
   wdt_enable(WDTO_8S);//watchdog a 8 secondi
   
