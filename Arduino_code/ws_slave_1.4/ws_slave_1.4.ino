@@ -1142,7 +1142,7 @@ void radioRX(){
 void setup() {  
   Serial.begin(9600);
   Wire.begin();
-  digitalWrite(SDA, 0);
+  digitalWrite(SDA, 0);//disable internal i2c pull up
   digitalWrite(SCL, 0);
   SPI.begin();
   wdt_enable(WDTO_8S);//watchdog a 8 secondi
