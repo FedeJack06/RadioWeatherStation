@@ -222,50 +222,6 @@ struct radioVal {
 };
 radioVal radioRx;   // 27/32 byte occuped
 
-//////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////PRESSIONE E MEDIA PER EVITARE INTERFERENZE//////////////////////////////////////////////
-#define LETTURE 30
-#define SCARTO 60
-
-#define MAX(A,B) ((A>B)?A:B)
-#define MIN(A,B) ((A<B)?A:B)
-
-static uint32_t current = 0;
-
-uint8_t errata(uint32_t pressione, uint32_t attesa)
-{
-  uint32_t absolute = MAX(pressione, attesa) - MIN(pressione, attesa);
-  return absolute > SCARTO ? 1 : 0;
-}
-
-uint32_t GETPressure()
-{
-  uint32_t pressioni[LETTURE];
-  uint32_t totale;
-  uint32_t media;
-  uint8_t k;
-  uint8_t i;
-
-  for (i = 0, totale = 0; i < LETTURE; ++i)
-  {
-    pressioni[i] = barometer.readPressure();
-    totale += pressioni[i];
-  }
-
-  media = totale / LETTURE;
-
-  for (i = 0, k = 0; i < LETTURE; ++i)
-  {
-    if ( errata(pressioni[i], media) )
-    {
-      totale -= pressioni[i];
-      ++k;
-    }
-  }
-
-  return totale / (LETTURE - k);
-}
-
 //////////////INIZIALIZZAZIONI/////////////////////////////////////////////////////
 //SD
 void initSD() {
@@ -345,12 +301,6 @@ void initPressure () {
   Serial.println("BMP180 error");
 else Serial.println("BMP180 ok");*/
 erbmp = barometer.begin();
-  
-  current = GETPressure();
-  current += GETPressure();
-  current += GETPressure();
-  current += GETPressure();
-  current >>= 2;
 }
 
 //RADIO
@@ -374,13 +324,13 @@ void initRadio() {
 
 void initEstremi(){
   if (INIZIALIZZAZIONE) {
-    pNow = current;
-    pSix = current;
-    pFive = current;
-    pFour = current;
-    pThree = current;
-    pTwo = current;
-    pOne = current;
+    pNow = pressione;
+    pSix = pressione;
+    pFive = pressione;
+    pFour = pressione;
+    pThree = pressione;
+    pTwo = pressione;
+    pOne = pressione;
 
     DayTemp.max = -100; //temperatura massima giornaliera
     DayTemp.min = 100; //temperatura minima giornaliera
@@ -536,22 +486,11 @@ void readHum () {
 
 ////////////////PRESSIONE E I SUOI ESTREMI/////////////////////////
 void readPressure () {
-  
-  uint8_t retry = 255;
-  uint32_t tmpPressure;
-
-  do
-  {
-    tmpPressure = GETPressure();
-  }
-  while ( errata(tmpPressure, current) && --retry > 0);
-
-  current = tmpPressure;
-  pressione = current;
+  pressione = barometer.readPressure();
   pressionelivellodelmare = pressione + CALIBRATION;
 
-  previousThree = current - pThree;
-  previousSix = current - pSix;
+  previousThree = pressione - pThree;
+  previousSix = pressione - pSix;
 
 //MEDIA
   if(millis() - intmediapr < interval){
@@ -576,7 +515,7 @@ void readPressure () {
      pThree = pTwo; //pressione -3 ore
      pTwo = pOne; //pressione -2 ore
      pOne = pNow; //pressione -1 ore
-     pNow = current; //pressione attuale
+     pNow = pressione; //pressione attuale
   }
 
 //ESTREMI
@@ -1122,11 +1061,11 @@ void radioRX(){
   radioLink = !timeout;
 
   if ( timeout )
-    Serial.println(F("0"));//Failed, response timed out.
+    Serial.println(F("%0"));//Failed, response timed out.
   else{
     RF24NetworkHeader header;        // If so, grab it and print it out
     network.read(header, &radioRx, sizeof(radioRx));
-    Serial.println(F("1")); //RECEIVED DATA
+    Serial.println(F("%1")); //RECEIVED DATA
   }
 
   //SENDING
@@ -1141,6 +1080,9 @@ void radioRX(){
 ////////////////////////////////////////////////////////////////////////////////////////////////
 void setup() {  
   Serial.begin(9600);
+  while (!Serial){
+    ;
+  }
   Wire.begin();
   digitalWrite(SDA, 0);//disable internal i2c pull up
   digitalWrite(SCL, 0);
@@ -1157,7 +1099,7 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("init");
+  delay(300);
   resetArduino();
   radioRX();
   wdt_reset();
@@ -1198,14 +1140,14 @@ void loop() {
   wdt_reset();
 ////////////////////////////////////////////////////////
   Serial.print(Year);
-  Serial.print("-");
+  Serial.print(F("-"));
   Serial.print(Month);
-  Serial.print("-");
+  Serial.print(F("-"));
   Serial.println(Day);
   Serial.print(Hour);
-  Serial.print(":");
+  Serial.print(F(":"));
   Serial.print(Minute);
-  Serial.print(":");
+  Serial.print(F(":"));
   Serial.println(Second);
   
   Serial.println(TP);
@@ -1226,20 +1168,12 @@ void loop() {
   Serial.println(rainrate);
   Serial.println(mediaRR);
   Serial.println(DayRainRate.max);
-  
-  Serial.println(DayTemp.max);
-  Serial.println(DayTemp.min);
-  Serial.println(DayHum.max);
-  Serial.println(DayHum.min);
-  Serial.println(DayPressureSlm.max);
-  Serial.println(DayPressureSlm.min);
   Serial.println(wind.max);
   Serial.println(rainrateMax);
   Serial.println(mediaTp);
-  Serial.println(F("___"));
   Serial.println(erbmp);
   Serial.println(erradioRX);
   Serial.println(erroreSD);
   Serial.println(float(radioRx.volt)/10, 1);
-  Serial.println(F("______"));
+  delay(300);
 }
