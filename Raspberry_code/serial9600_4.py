@@ -7,9 +7,9 @@ time.sleep(1)
 #connect to meteo.dataday
 mydb = mysql.connector.connect(
   host="localhost",
-  user="meteo",
-  password="federico3000",
-  database="meteo"
+  user="user",
+  password="",
+  database="db"
 )
 mycursor = mydb.cursor()
 
