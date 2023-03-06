@@ -11,7 +11,8 @@
   <strong>Sensors:</strong>
 <li>sht35 (I2C)</li>
 <li>bmp180 (I2C)</li>
-<li>dht22 (digital)</li>
+<li>dht22 (digital) (optional)</li>
+<li>ds18b20 (digital) (optional)</li>
 <li>anemometer (reed contact)</li>
 <li>wind direction (voltage output)</li>
 <li>rain gauge (reed contact)</li>
