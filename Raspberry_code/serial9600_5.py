@@ -17,11 +17,12 @@ mycursor = mydb.cursor()
 ##timing 
 starttime = time.time()
 errorCount = 0
+link_lost = False
 
 ##data structur
-data = np.empty((0,10)) #matrice per medie su colonne
-rowPy = [0,0,0,0,0,0,0,0,0,0] #righa dati aggiunta ad ogni ciclo
-label = {"send":0, "tp":1, "tpdht":2, "tp2":3, "ur":4, "ur2":5, "pressure":6, "slpressure":7, "wind":8, "rainrate":9}
+data = np.empty((0,11)) #matrice per medie su colonne
+rowPy = [0,0,0,0,0,0,0,0,0,0,0] #righa dati aggiunta ad ogni ciclo
+label = {"send":0, "tp":1, "tpdht":2, "tp2":3, "ur":4, "ur2":5, "pressure":6, "slpressure":7, "wind":8, "rainrate":9, "volt":10}
 gradi = [22,45,67,90,112,135,157,180,202,225,247,270,292,315,337,0]
 modaDir = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] #array con frequenza assoluta della direzione del vento, indici risppettivi a gradi[]
 rowNumber = 0
@@ -36,14 +37,9 @@ while True:
 	radio_link = ser.readline().decode().rstrip()#cerco testa del treno dati
 	print(radio_link)
 	if radio_link == "%0" or radio_link == "%1": #inizio treno dati con %0 o %1
-		#dati da mediare
+		#LETTURA DATI da seriale
 		for i in range(10): #i from 0 to 9
 			rowPy[i] = float(ser.readline().decode().rstrip())
-		print(rowPy)
-		row = np.array(rowPy)
-		print(row)
-		row[row == 999] = np.nan #nan where sensor not connected
-		#dati singoli
 		ws_date = ser.readline().decode().rstrip()
 		ws_time = ser.readline().decode().rstrip()
 		winddirindex = int(float(ser.readline().decode().rstrip()))
@@ -53,28 +49,26 @@ while True:
 			mediatp = None
 		raffica = float(ser.readline().decode().rstrip())
 		RRmax = float(ser.readline().decode().rstrip())
-		### errori-controlli
 		bmp180_status = ser.readline().decode().rstrip()
 		radio_status = ser.readline().decode().rstrip()
 		sd_status = ser.readline().decode().rstrip()
-		volt = ser.readline().decode().rstrip()
-		print (ws_date)
-		print (ws_time)
+		rowPy[label['volt']] = float(ser.readline().decode().rstrip())
+        #VERIFICA ERRORI
+		row = np.array(rowPy)
+		row[row == 999] = np.nan #nan where sensor not connected	
+
+        #INSERIMENTO DATI IN MATRICE MEDIE
 		if radio_link == "%1":                      #se dato è fresco dallo slave, èa appena arrivato dal master
+			print(ws_date, ws_time, rowPy)
 			data = np.append(data, [row], axis = 0) #add row to matrix
 			modaDir[winddirindex] += 1              #aggiungo 1 frequenza alla moda direzione vento
 			rowNumber += 1
-			print("row added")
+			print("row added ___")
+			link_lost = False
 		elif radio_link == "%0":  #se dato non fresco non fare niente, altrimenti stesso dato contato più volte nella media
-			print ("link lost")
-		else:
-			print("error")   #se dopo 50 righe lette non trovo testa del treno dati riapro seriale
-			errorCount += 1
-			if errorCount == 50:
-				print("error... reopen serial")
-				errorCount = 0
-				ser.close()
-				ser.open()
+			link_lost = True
+
+		#DATI DATABASE
 		if (time.time() - starttime) > 60 and np.shape(data)[0] > 0:      #quando è passato 1 min e almeno una riga inserita		
 			starttime = time.time()             #medie calcolate sui dati freschi raccolti nel minuto, anche 1 sola riga  :(
 			#datatime attuali
@@ -93,16 +87,20 @@ while True:
 			wind = MEANS[label['wind']]
 			rainrate = MEANS[label['rainrate']]
 			windang = int(gradi[modaDir.index(max(modaDir))])
+			volt = MEANS[label['volt']]
 			#DERIVATE
 			#dewpoint - wetbulb
-			if not tp or not ur:
+			if not ur or (not tp and not tpdht):
 				dewpoint = None
 				wetbulb = None
+			elif not tp:
+				dewpoint = pow(ur/100,0.125)*(112+(0.9*tpdht)) + (0.1*tpdht) - 112
+				wetbulb = tpdht * (0.45 + 0.006 * ur * pow(slpressure/106000, 0.5))
 			else:
 				dewpoint = pow(ur/100,0.125)*(112+(0.9*tp)) + (0.1*tp) - 112
 				wetbulb = tp * (0.45 + 0.006 * ur * pow(slpressure/106000, 0.5))
 			#heatindex
-			if not tp or not ur:
+			if not ur or not tp:
 				heatindex = None
 			elif tp>27 and ur>40:
 				heatindex = -42.379 + 2.04901523*(tp*1.8 + 32) + 10.14333127*ur - 0.22475541*(tp*1.8 + 32)*ur - 0.00683783*pow(tp*1.8 + 32,2) - 0.05481717*pow(ur,2) + 0.00122874*pow(tp*1.8 + 32,2)*ur + 0.00085282*(tp*1.8 + 32,2)*pow(ur,2) - 0.00000199*pow(tp*1.8 + 32,2)*pow(ur,2)
@@ -115,7 +113,7 @@ while True:
 				windchill = (13.12 + 0.6215 * tp) - (11.37 * pow(wind*3.6, 0.16)) + (0.3965 * tp * pow(wind*3.6, 0.16))
 			else:
 				windchill = tp
-
+			
 			#import in meteo.dataday
 			sql = "INSERT INTO dataday(date, time, wsDate, wsTime, tp, tpdht, tp2, ur, ur2, dewpoint, heatindex, pressione, pressionelivellodelmare, wind, windAng, windchill, mmPioggia, rainrate, mediatp, wetbulb, nData) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 			val = (today, nowtime, ws_date, ws_time, tp, tpdht, tp2, ur, ur2, dewpoint, heatindex, pressure, slpressure, wind, windang, windchill, mmpioggia, rainrate, mediatp, wetbulb, rowNumber)
@@ -148,11 +146,18 @@ while True:
 			val3 = (today, nowtime, tpmax, tpmin, urmax, urmin, pressuremax, pressuremin, slpressuremax, slpressuremin, windmax, rainratemax, raffica, RRmax)
 			mycursor.execute(sql3, val3)
 			mydb.commit()
-			print(mycursor.rowcount, "extreme inserted.")
+			print(mycursor.rowcount, "extreme inserted. ___")
 
 			#reset data matrix and moda dir
-			data = np.empty((0,10))
+			data = np.empty((0,11))
 			modaDir = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 			rowNumber = 0
-	print ("____")
+	else:
+		#se dopo 50 righe lette non trovo testa del treno dati riapro seriale
+		errorCount += 1
+		if errorCount == 50:
+			print("error... reopen serial ___")
+			errorCount = 0
+			ser.close()
+			ser.open()
 # np.ma.masked_where(data == 999, data)
