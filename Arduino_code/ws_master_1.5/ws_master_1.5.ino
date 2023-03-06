@@ -310,7 +310,7 @@ void initTemp () {
   
   sht35.begin(0x44); //sensor i2c address
   Wire.setClock(100000);
-  Serial.println(sht35.readStatus(), HEX);
+  //Serial.println(sht35.readStatus(), HEX);
   if ( sht35.isConnected() )
     Serial.println(F("sht35 ok"));
   else
@@ -667,14 +667,11 @@ void setup() {
   wind.max = 0; //reset raffica massima nell'intervallo
   wind.raffica = 0; //reset raffica massima giornaliera
   
-  Serial.println("init0");
   setWindClock();
   Eeprom();
   initSD();
   initRadio();
-  Serial.println("radio done");
   initTemp ();
-  Serial.println("temp done");
   initHum ();
   initWind();
   initPioggia();
@@ -694,11 +691,9 @@ void setup() {
 void loop() {
   wdt_reset();
   count++;
-  Serial.println("prima temp");
   readTemp();
-  Serial.println("dopo temp");
-  readHum ();
-  readWind ();
+  readHum();
+  readWind();
   readWindDir();
   readPioggia();
   Datalog();
