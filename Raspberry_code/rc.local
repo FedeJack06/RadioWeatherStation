@@ -19,18 +19,21 @@ fi
 
 echo "running rc.local" > /tmp/rc_test.txt
 
+sleep 10
+
 #record data
-/home/pi/dscript/monitoring.sh > /home/pi/dscript/monitoring.log 2>&1 &
+/home/pi/dscript/monitoring.sh >> /home/pi/dscript/monitoring.log 2>&1 &
 #> /home/pi/serial9600.log 2>&1" &
 
 #getmeteoblue
-/home/pi/dscript/runMeteoblue.sh > /home/pi/dscript/runMeteoblue.log 2>&1 &
+/home/pi/dscript/runMeteoblue.sh >> /home/pi/dscript/getmeteoblue.log 2>&1 &
 #su pi -c /usr/bin/python3 /home/pi/dscript/getmeteoblue.py > /home/pi/dscript/meteoblue.log 2>&1" &
 
 #file reti meteo
-/home/pi/dscript/runRetiMeteo.sh > /home/pi/dscript/runRetiMeteo.log 2>&1 &
+/home/pi/dscript/runRetiMeteo.sh >> /home/pi/dscript/reti_meteo.log 2>&1 &
 
-#root graph
-#/home/pi/dscript/graph.sh > /home/pi/dscript/graph.log 2>&1 &
+#wunderground
+/home/pi/dscript/runWU_upload.sh >> /home/pi/dscript/WU_upload.log 2>&1 &
+
 
 exit 0
