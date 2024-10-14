@@ -4,7 +4,7 @@
 <p>Second indor Arduino mega (UNO can also be used) show data on 1.8" TFT screen, send data to raspberry on serial port.</p>
 <p>Raspeberry store data in mariaDB database and host the <a href="https://meteocremolino.ddns.net">station site</a>.</p>
 
-<p>Originally the station was made with only two arduino, that's why two arduino are still present in the project. Indoor arduino can be removed.</p>
+<p>Originally the station was made with only two arduino, the indoor one was a server for a html page (see Webbino code version v1.3). That's why two arduino are still present in the project, indoor arduino can be removed.</p>
 <p>Data from a sensor is the average of 60 measures over one minute, sampling frequency of 1Hz.</p> 
 
 <p>
